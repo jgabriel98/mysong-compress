@@ -1,15 +1,13 @@
 import type { AstroIntegrationLogger } from 'astro';
-import { createHash } from 'crypto';
-import { mkdir, writeFile, readFile, stat } from 'fs/promises';
-import { join } from 'path';
+import fs, { stat } from 'fs/promises';
 import path from 'path';
-import fs from 'fs/promises';
+import { UsedFormatConfig } from './types';
 
 export interface CacheEntry {
   sourceHash: string;     // Hash of original uncompressed file
   compressedPath: string; // Path to cached compressed version
   timestamp: number;      // Cache creation time
-  settings: unknown;      // Compression settings used (to invalidate if settings change)
+  settings: UsedFormatConfig;      // Compression settings used (to invalidate if settings change)
   size: {
     original: number;
     compressed: number;
@@ -18,13 +16,14 @@ export interface CacheEntry {
 
 export interface CompressionCache {
   version: string;
+  /** Map<filepath, CacheEntry> */
   entries: Record<string, CacheEntry>;
 }
 
 export interface CompressionCacheManager {
   initialize(): Promise<void>;
-  getCachedFile(originalPath: string, sourceHash: string, settings: unknown): Promise<CacheEntry | null>;
-  saveToCache(originalPath: string, sourceHash: string, originalLength: number, compressedContent: Buffer, settings: unknown): Promise<void>;
+  getCachedFile(originalPath: string, sourceHash: string, settings: UsedFormatConfig): Promise<CacheEntry | null>;
+  saveToCache(originalPath: string, sourceHash: string, originalLength: number, compressedContent: Buffer, settings: UsedFormatConfig): Promise<void>;
   invalidateCache(pattern?: string): Promise<void>;
 } 
 
@@ -32,6 +31,7 @@ export class CompressionCacheManagerImpl implements CompressionCacheManager {
   private cacheDir: string;
   private manifest: CompressionCache;
   private logger: AstroIntegrationLogger;
+
   constructor(astroDir: string, logger: AstroIntegrationLogger) {
     this.cacheDir = astroDir;
     this.manifest = { version: '1', entries: {} };
@@ -59,7 +59,7 @@ export class CompressionCacheManagerImpl implements CompressionCacheManager {
     this.logger.debug('Manifest saved.');
   }
 
-  async getCachedFile(originalPath: string, sourceHash: string, settings: unknown): Promise<CacheEntry | null> {
+  async getCachedFile(originalPath: string, sourceHash: string, settings: UsedFormatConfig): Promise<CacheEntry | null> {
     this.logger.debug(`Retrieving cached file for: ${originalPath}`);
     const entry = this.manifest.entries[originalPath];
     if (!entry) {
@@ -88,7 +88,7 @@ export class CompressionCacheManagerImpl implements CompressionCacheManager {
     }
   }
 
-  async saveToCache(originalPath: string, sourceHash: string, originalLength: number, compressedContent: Buffer, settings: unknown): Promise<void> {
+  async saveToCache(originalPath: string, sourceHash: string, originalLength: number, compressedContent: Buffer, settings: UsedFormatConfig): Promise<void> {
     this.logger.debug(`Saving to cache: ${originalPath}`);
     const ext = originalPath.split('.').pop() || '';
     const cachedFileName = `${sourceHash}.${ext}`;

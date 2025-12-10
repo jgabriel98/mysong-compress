@@ -1,23 +1,18 @@
 import type { AstroIntegration, AstroConfig, AstroIntegrationLogger } from 'astro';
+import { createHash } from 'crypto';
+import * as csso from 'csso';
 import * as fs from 'fs';
+import { minify } from 'html-minifier-terser';
 import * as path from 'path';
 import sharp from 'sharp';
-import { minify } from 'html-minifier-terser';
-import { minify as terserMinify } from 'terser';
 import { optimize } from 'svgo';
-import * as csso from 'csso';
+import { minify as terserMinify } from 'terser';
 import { CompressionCacheManagerImpl } from './CompressionCache.js';
-import { createHash } from 'crypto';
-import type { CompressionOptions } from './types.js';
 import { defaultCacheDir, defaultConfig } from './defaultConfig.js';
+import type { CompressOptions, FormatCompressionOptions, UsedFormatConfig } from './types.js';
 
 
-interface UsedConfig {
-    config: any;
-    format: string | undefined;
-}
-
-export default function mysongCompress(options: CompressionOptions = {}): AstroIntegration {
+export default function mysongCompress(options: CompressOptions = {}): AstroIntegration {
     // Merge compression options with defaults
     const compressionConfig = {
         ...defaultConfig,
@@ -55,14 +50,17 @@ export default function mysongCompress(options: CompressionOptions = {}): AstroI
         }
     }
 
-    function getUsedConfig(filePath: string): UsedConfig | null {
-        const format = filePath.toLowerCase().split('.').pop();
-        const config = compressionConfig[format as keyof typeof compressionConfig] || null;
+    function getUsedConfig(filePath: string) {
+        const format = filePath.toLowerCase().split('.').pop() as keyof FormatCompressionOptions;
+        const config = compressionConfig[format] ?? null;
         return { config, format };
     }
 
     async function processFile(filePath: string, logger: AstroIntegrationLogger)
-        : Promise<{ processed: boolean, originalSize: number, newSize: number, reason: string, usedConfig: UsedConfig | null }> {
+        : Promise<
+            { processed: true, originalSize: number, newSize: number, reason: string, usedConfig: UsedFormatConfig }
+            | { processed: false, originalSize: number, newSize: number, reason: string, usedConfig: UsedFormatConfig | null }
+        > {
         logger.debug("Processing " + filePath);
 
         const originalSize = fs.statSync(filePath).size;
@@ -88,7 +86,7 @@ export default function mysongCompress(options: CompressionOptions = {}): AstroI
         const handleError = (error: any, processType: string) => {
             logger.debug(`${processType} error for ${filePath}: ${error}`);
             reason = `${processType.toLowerCase()} failed`;
-            return { processed: false, originalSize, newSize: originalSize, reason, usedConfig };
+            return { processed: false, originalSize, newSize: originalSize, reason, usedConfig } as const;
         };
 
         try {
@@ -253,6 +251,6 @@ export default function mysongCompress(options: CompressionOptions = {}): AstroI
                 logger.info(`Cache hits: ${cacheHits}`);
             },
         },
-    };
+    } as AstroIntegration;
 }
 
