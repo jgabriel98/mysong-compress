@@ -6,10 +6,11 @@
     "astro-compress",
     "withastro",
     "astro-integration",
-    "performance"
+    "performance",
+    "tooling"
   ],
   "version": "0.0.6",
-  "description": "Compression integration for static assets in astro.",
+  "description": "Compression integration for static assets in astro, with caching.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jgabriel98/astro-compress.git"
