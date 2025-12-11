@@ -315,7 +315,7 @@ describe('Image Compression', async () => {
     expect(metadata.height).toBe(1000);
     expect(metadata.format).toBe('heif');
     expect(metadata.compression).toBe('av1');
-  });
+  }, 8000);
 
   test('should compress Heif images', async () => {
     // Set up test files

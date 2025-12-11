@@ -8,9 +8,12 @@
     "astro-integration",
     "performance"
   ],
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Compression integration for static assets in astro.",
-  "repository": "https://github.com/jgabriel98/astro-compress",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jgabriel98/astro-compress.git"
+  },
   "homepage": "https://github.com/jgabriel98/astro-compress#readme",
   "bugs": {
     "url": "https://github.com/jgabriel98/astro-compress/issues"
