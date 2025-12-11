@@ -1,20 +1,19 @@
 {
-  "name": "mysong-compress",
+  "name": "gab-astro-compress",
   "keywords": [
-    "mysong",
     "compress",
     "astro",
-    "mysong-compress",
+    "astro-compress",
     "withastro",
     "astro-integration",
     "performance"
   ],
   "version": "0.0.4",
   "description": "Compression integration for static assets in astro.",
-  "repository": "https://github.com/mysongstudio/mysong-compress",
-  "homepage": "https://github.com/mysongstudio/mysong-compress#readme",
+  "repository": "https://github.com/jgabriel98/astro-compress",
+  "homepage": "https://github.com/jgabriel98/astro-compress#readme",
   "bugs": {
-    "url": "https://github.com/mysongstudio/mysong-compress/issues"
+    "url": "https://github.com/jgabriel98/astro-compress/issues"
   },
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -29,7 +28,7 @@
     "test": "vitest",
     "test:coverage": "vitest run --coverage"
   },
-  "author": "Wladi Mitzel <mitzel@tawadi.de>",
+  "author": "João Gabriel S. Fernandes <jgabsfernandes@gmail.com>",
   "license": "MIT",
   "devDependencies": {
     "@types/csso": "^5.0.4",
