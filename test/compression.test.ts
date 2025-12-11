@@ -1,16 +1,12 @@
-import { describe, test, expect, beforeEach, afterEach } from 'vitest';
-import { TEST_FILES } from './fixtures/sample-files';
-import mysongCompress from '../src/index';
-import { CompressionCacheManagerImpl } from '../src/CompressionCache';
 import * as fs from 'fs/promises';
-import * as path from 'path';
+import { afterEach, beforeEach, describe, test } from 'vitest';
 
-describe('mysong-compress', () => {
+describe('gab-astro-compress', () => {
   let tempDir: string;
   
   beforeEach(async () => {
     // Set up temporary test directory
-    tempDir = await fs.mkdtemp('mysong-compress-test-');
+    tempDir = await fs.mkdtemp('gab-astro-compress-test-');
     // Copy test files to temp directory
   });
 

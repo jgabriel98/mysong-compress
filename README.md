@@ -1,4 +1,4 @@
-# mysong-compress
+# AstroCompress
 
 A powerful compression integration for static assets in Astro. This package automatically optimizes and compresses various file types including images, HTML, JavaScript, CSS, and SVG files during the build process.
 
@@ -17,7 +17,7 @@ This integraton is inspired by [astro-compress](https://github.com/withastro/ast
 ## Installation 
 
 ```bash
-npm install mysong-compress
+npm install gab-astro-compress
 ```
 
 ## Usage
@@ -25,32 +25,32 @@ npm install mysong-compress
 Add the integration to your `astro.config.mjs`:
 
 ```js
-import mysongCompress from 'mysong-compress';
+import astroCompress from 'gab-astro-compress';
 
 import { defineConfig } from 'astro';
 
 export default defineConfig({
   integrations: [
-    mysongCompress({
+    astroCompress({
       // optional configuration
     })
   ]
 });
 ```
 
-> **Note:** mysong-compress hooks into the Astro `astro:build:done` hook. It is called when the static assets are finished. Add mysong-compress as the last integration for best results. This way it can also optimize the output of other integrations.
+> **Note:** gab-astro-compress hooks into the Astro `astro:build:done` hook. It is called when the static assets are finished. Add gab-astro-compress as the last integration for best results. This way it can also optimize the output of other integrations.
 	
 ## Configuration
 
 You can customize the compression settings for different file types.
 
-* The compression for `png`, `jpeg`, `webp`, `avif`, `heif` is handled by [sharp](https://sharp.pixelplumbing.com/api-output#png). The mysong-compress integration wraps the corresponding sharp options, so that you have full control over the compression process.
-* The compression for `html` is handled by [html-minifier-terser](https://github.com/terser/html-minifier-terser?tab=readme-ov-file#options-quick-reference). The mysong-compress integration wraps the corresponding html-minifier-terser options, so that you have full control over the compression process.
-* The compression for `js` is handled by [terser](https://terser.org/docs/api-reference#minify-options). The mysong-compress integration wraps the corresponding terser options, so that you have full control over the compression process.
+* The compression for `png`, `jpeg`, `webp`, `avif`, `heif` is handled by [sharp](https://sharp.pixelplumbing.com/api-output#png). The gab-astro-compress integration wraps the corresponding sharp options, so that you have full control over the compression process.
+* The compression for `html` is handled by [html-minifier-terser](https://github.com/terser/html-minifier-terser?tab=readme-ov-file#options-quick-reference). The gab-astro-compress integration wraps the corresponding html-minifier-terser options, so that you have full control over the compression process.
+* The compression for `js` is handled by [terser](https://terser.org/docs/api-reference#minify-options). The gab-astro-compress integration wraps the corresponding terser options, so that you have full control over the compression process.
 * The compression for `svg` is handled by [svgo](https://github.com/svg/svgo?tab=readme-ov-file#configuration). 
 * The compression for `css` is handled by [csso](https://github.com/css/csso). 
 
-The mysong-compress integration wraps the corresponding tool options, so that you have full control over the compression process.
+The astro-compress integration wraps the corresponding tool options, so that you have full control over the compression process.
 
 Below you can find the default configuration for each file type. The effort parameter is set to max for all image formats. As we are using a cache this will provide the best compression at reasonable build times. You can override the default settings in your configuration for faster builds.
 
@@ -124,9 +124,9 @@ The integration includes a caching system that stores compressed versions of fil
 
 MIT
 
-## Author
+## Acknowledgments
 
-Developed by [MySong.Studio](https://mysong.studio).
+This is a fork of [mysong-compress](https://github.com/mysongstudio/mysong-compress), thanks for the original creator [@mysongstudio](https://github.com/mysongstudio) !
 
 ## Contributing
 

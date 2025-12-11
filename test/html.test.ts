@@ -2,7 +2,7 @@ import type { AstroIntegrationLogger } from 'astro';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { afterEach, beforeAll, describe, expect, test } from 'vitest';
-import mysongCompress from '../src/index';
+import gabAstroCompress from '../src/index';
 import { getFileSize, setupTestFile } from './helpers';
 
 describe('HTML Minification', () => {
@@ -65,7 +65,7 @@ describe('HTML Minification', () => {
     warn: () => {},
     error: console.error,
     fork: () => mockLogger,
-    label: 'mysong-compress'
+    label: 'gab-astro-compress'
   };
 
   beforeAll(async () => {
@@ -84,7 +84,7 @@ describe('HTML Minification', () => {
     assets: new Map<string, URL[]>(),
   };
 
-  async function runCompression(compress: ReturnType<typeof mysongCompress>) {
+  async function runCompression(compress: ReturnType<typeof gabAstroCompress>) {
     // First run config hook
     await compress.hooks['astro:config:done']?.({
       config: {
@@ -153,7 +153,7 @@ describe('HTML Minification', () => {
     const originalContent = await fs.readFile(filePath, 'utf-8');
     
     // Initialize compression with default settings
-    const compress = mysongCompress();
+    const compress = gabAstroCompress();
     await runCompression(compress);
 
     const compressedContent = await fs.readFile(filePath, 'utf-8');
@@ -168,7 +168,7 @@ describe('HTML Minification', () => {
     const filePath = await setupTestFile(tempDir, TEST_HTML.basic);
     const originalContent = await fs.readFile(filePath, 'utf-8');
     
-    const compress = mysongCompress();
+    const compress = gabAstroCompress();
     await runCompression(compress);
 
     const compressedContent = await fs.readFile(filePath, 'utf-8');
@@ -183,7 +183,7 @@ describe('HTML Minification', () => {
     const filePath = await setupTestFile(tempDir, TEST_HTML.withInlineAssets);
     const originalSize = await getFileSize(filePath);
     
-    const compress = mysongCompress({
+    const compress = gabAstroCompress({
       html: {
         minifyCSS: true,
         minifyJS: true
@@ -222,7 +222,7 @@ describe('HTML Minification', () => {
 
     const filePath = await setupTestFile(tempDir, malformedHTML);
     
-    const compress = mysongCompress();
+    const compress = gabAstroCompress();
     
     // Should not throw error
     await runCompression(compress);

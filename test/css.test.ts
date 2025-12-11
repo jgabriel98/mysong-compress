@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach } from 'vitest';
-import mysongCompress from '../src/index';
+import gabAstroCompress from '../src/index';
 import { setupTestFiles, getFileSize, setupTestFile } from './helpers';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -52,7 +52,7 @@ describe('CSS Compression', () => {
     warn: () => {},
     error: console.error,
     fork: () => mockLogger,
-    label: 'mysong-compress',
+    label: 'gab-astro-compress',
     options: {
       dest: {
         write: () => true
@@ -71,7 +71,7 @@ describe('CSS Compression', () => {
     await fs.rm(tempDir, { recursive: true, force: true });
   });
 
-  async function runCompression(compress: ReturnType<typeof mysongCompress>) {
+  async function runCompression(compress: ReturnType<typeof gabAstroCompress>) {
     await compress.hooks['astro:config:done']?.({
       config: {
         root: new URL(`file://${tempDir}`),
@@ -137,7 +137,7 @@ describe('CSS Compression', () => {
     const filePath = path.join(tempDir, TEST_CSS.basic.name);
     const originalSize = await getFileSize(filePath);
     
-    const compress = mysongCompress();
+    const compress = gabAstroCompress();
     await runCompression(compress);
 
     const compressedContent = await fs.readFile(filePath, 'utf-8');
@@ -160,7 +160,7 @@ describe('CSS Compression', () => {
     const filePath = path.join(tempDir, TEST_CSS.withVendorPrefixes.name);
     const originalSize = await getFileSize(filePath);
     
-    const compress = mysongCompress();
+    const compress = gabAstroCompress();
     await runCompression(compress);
 
     const compressedContent = await fs.readFile(filePath, 'utf-8');
@@ -192,7 +192,7 @@ describe('CSS Compression', () => {
     const filePath = await setupTestFile(tempDir, malformedCSS);
     const originalContent = await fs.readFile(filePath, 'utf-8');
     
-    const compress = mysongCompress();
+    const compress = gabAstroCompress();
     
     // Should not throw error
     await runCompression(compress);

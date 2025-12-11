@@ -12,7 +12,7 @@ import { defaultCacheDir, defaultConfig } from './defaultConfig.js';
 import type { CompressOptions, FormatCompressionOptions, UsedFormatConfig } from './types.js';
 
 
-export default function mysongCompress(options: CompressOptions = {}): AstroIntegration {
+export default function GabAstroCompress(options: CompressOptions = {}): AstroIntegration {
     // Merge compression options with defaults
     const compressionConfig = {
         ...defaultConfig,
@@ -176,10 +176,10 @@ export default function mysongCompress(options: CompressOptions = {}): AstroInte
 
 
     return {
-        name: 'mysong-compress',
+        name: 'gab-astro-compress',
         hooks: {
             'astro:config:done': async ({ config, logger }) => {
-                logger.info('mysong-compress started');
+                logger.info('gab-astro-compress started');
                 astroConfig = config; // Store Astro's config separately
 
                 if (compressionConfig.cache?.enabled) {
@@ -194,7 +194,7 @@ export default function mysongCompress(options: CompressOptions = {}): AstroInte
                 logger.debug('Astro config:' + JSON.stringify(config));
             },
             'astro:build:done': async ({ assets, dir, logger }) => {
-                logger.info('mysong-compress build done');
+                logger.info('gab-astro-compress build done');
                 logger.info(JSON.stringify(assets));
                 logger.info(JSON.stringify(dir));
 

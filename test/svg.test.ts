@@ -2,7 +2,7 @@ import type { AstroIntegrationLogger } from 'astro';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
-import mysongCompress from '../src/index';
+import gabAstroCompress from '../src/index';
 import { getFileSize, setupTestFile } from './helpers';
 
 describe('SVG Compression', () => {
@@ -46,7 +46,7 @@ describe('SVG Compression', () => {
     warn: () => {},
     error: console.error,
     fork: () => mockLogger,
-    label: 'mysong-compress',
+    label: 'gab-astro-compress',
     options: {
       dest: {
         write: () => true
@@ -63,7 +63,7 @@ describe('SVG Compression', () => {
     await fs.rm(tempDir, { recursive: true, force: true });
   });
 
-  async function runCompression(compress: ReturnType<typeof mysongCompress>) {
+  async function runCompression(compress: ReturnType<typeof gabAstroCompress>) {
     // First run config hook
     await compress.hooks['astro:config:done']?.({
       config: {
@@ -131,7 +131,7 @@ describe('SVG Compression', () => {
     const filePath = await setupTestFile(tempDir, TEST_SVGS.basic);
     const originalSize = await getFileSize(filePath);
     
-    const compress = mysongCompress({
+    const compress = gabAstroCompress({
       svg: { multipass: true }
     });
     
@@ -156,7 +156,7 @@ describe('SVG Compression', () => {
     const filePath = await setupTestFile(tempDir, TEST_SVGS.withPaths);
     const originalSize = await getFileSize(filePath);
     
-    const compress = mysongCompress({
+    const compress = gabAstroCompress({
       svg: { multipass: true }
     });
     
@@ -191,7 +191,7 @@ describe('SVG Compression', () => {
     const filePath = await setupTestFile(tempDir, malformedSVG);
     const originalContent = await fs.readFile(filePath, 'utf-8');
     
-    const compress = mysongCompress();
+    const compress = gabAstroCompress();
     
     // Should not throw error
     await runCompression(compress);

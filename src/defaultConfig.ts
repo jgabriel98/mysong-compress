@@ -1,6 +1,6 @@
 import type { CompressOptions } from "./types";
 
-export const defaultCacheDir = 'node_modules/.astro/.mysong-compress';
+export const defaultCacheDir = 'node_modules/.astro/.gab-astro-compress';
 
 export const defaultConfig: NonNullable<CompressOptions> = {
     cache: {

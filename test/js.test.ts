@@ -2,7 +2,7 @@ import type { AstroIntegrationLogger } from 'astro';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { afterEach, beforeAll, describe, expect, test } from 'vitest';
-import mysongCompress from '../src/index';
+import gabAstroCompress from '../src/index';
 import { getFileSize, setupTestFile } from './helpers';
 
 describe('JavaScript Compression', () => {
@@ -62,7 +62,7 @@ describe('JavaScript Compression', () => {
     warn: () => {},
     error: console.error,
     fork: () => mockLogger,
-    label: 'mysong-compress',
+    label: 'gab-astro-compress',
     options: {
       dest: {
         write: () => true
@@ -79,7 +79,7 @@ describe('JavaScript Compression', () => {
     await fs.rm(tempDir, { recursive: true, force: true });
   });
 
-  async function runCompression(compress: ReturnType<typeof mysongCompress>) {
+  async function runCompression(compress: ReturnType<typeof gabAstroCompress>) {
     await compress.hooks['astro:config:done']?.({
       config: {
         root: new URL(`file://${tempDir}`),
@@ -145,7 +145,7 @@ describe('JavaScript Compression', () => {
     const filePath = await setupTestFile(tempDir, TEST_JS.basic);
     const originalSize = await getFileSize(filePath);
     
-    const compress = mysongCompress();
+    const compress = gabAstroCompress();
     await runCompression(compress);
 
     const compressedContent = await fs.readFile(filePath, 'utf-8');
@@ -169,7 +169,7 @@ describe('JavaScript Compression', () => {
     const filePath = await setupTestFile(tempDir, TEST_JS.withES6);
     const originalSize = await getFileSize(filePath);
     
-    const compress = mysongCompress();
+    const compress = gabAstroCompress();
     await runCompression(compress);
 
     const compressedContent = await fs.readFile(filePath, 'utf-8');
@@ -199,7 +199,7 @@ describe('JavaScript Compression', () => {
     const filePath = await setupTestFile(tempDir, malformedJS);
     const originalContent = await fs.readFile(filePath, 'utf-8');
     
-    const compress = mysongCompress();
+    const compress = gabAstroCompress();
     
     // Should not throw error
     await runCompression(compress);

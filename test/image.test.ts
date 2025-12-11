@@ -3,7 +3,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import sharp from 'sharp';
 import { afterEach, beforeAll, describe, expect, test } from 'vitest';
-import mysongCompress from '../src/index';
+import gabAstroCompress from '../src/index';
 import { getFileSize, setupTestFile } from './helpers';
 
 describe('Image Compression', async () => {
@@ -135,7 +135,7 @@ describe('Image Compression', async () => {
     warn: () => {},
     error: console.error,
     fork: () => mockLogger,
-    label: 'mysong-compress',
+    label: 'gab-astro-compress',
     options: {
       level: 'info'
     }
@@ -157,7 +157,7 @@ describe('Image Compression', async () => {
     assets: new Map<string, URL[]>(),
   };
 
-  async function runCompression(compress: ReturnType<typeof mysongCompress>) {
+  async function runCompression(compress: ReturnType<typeof gabAstroCompress>) {
     // First run config hook
     await compress.hooks['astro:config:done']?.({
       config: {
@@ -218,7 +218,7 @@ describe('Image Compression', async () => {
     const filePath = await setupTestFile(tempDir, TEST_IMAGES.png);
     const originalSize = await getFileSize(filePath);
     
-    const compress = mysongCompress({
+    const compress = gabAstroCompress({
       png: {
         compressionLevel: 9,
         palette: true
@@ -243,7 +243,7 @@ describe('Image Compression', async () => {
     const filePath = await setupTestFile(tempDir, TEST_IMAGES.jpeg);
     const originalSize = await getFileSize(filePath);
     
-    const compress = mysongCompress({
+    const compress = gabAstroCompress({
       jpeg: {
         mozjpeg: true,
         trellisQuantisation: true,
@@ -271,7 +271,7 @@ describe('Image Compression', async () => {
     const filePath = await setupTestFile(tempDir, TEST_IMAGES.webp);
     const originalSize = await getFileSize(filePath);
     
-    const compress = mysongCompress({
+    const compress = gabAstroCompress({
       webp: {
         effort: 6
       }
@@ -296,7 +296,7 @@ describe('Image Compression', async () => {
     const filePath = await setupTestFile(tempDir, TEST_IMAGES.avif);
     const originalSize = await getFileSize(filePath);
     
-    const compress = mysongCompress({
+    const compress = gabAstroCompress({
       avif: {
         effort: 2
       }
@@ -322,7 +322,7 @@ describe('Image Compression', async () => {
     const filePath = await setupTestFile(tempDir, TEST_IMAGES.heif);
     const originalSize = await getFileSize(filePath);
     
-    const compress = mysongCompress({
+    const compress = gabAstroCompress({
       heif: {
         effort: 2
       }
@@ -348,7 +348,7 @@ describe('Image Compression', async () => {
     const filePath = await setupTestFile(tempDir, TEST_IMAGES.corruptImage);
     const originalContent = await fs.readFile(filePath);
     
-    const compress = mysongCompress();
+    const compress = gabAstroCompress();
     
     // Should not throw error
     await runCompression(compress);

@@ -3,7 +3,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import { defaultCacheDir } from '../src/defaultConfig';
-import mysongCompress from '../src/index';
+import gabAstroCompress from '../src/index';
 import { setupTestFiles } from './helpers';
 
 describe('Cache System', () => {
@@ -39,7 +39,7 @@ describe('Cache System', () => {
     warn: console.log,
     error: console.error,
     fork: () => mockLogger,
-    label: 'mysong-compress',
+    label: 'gab-astro-compress',
     options: {
       dest: {
         write: () => true
@@ -57,7 +57,7 @@ describe('Cache System', () => {
     await fs.rm(tempDir, { recursive: true, force: true });
   });
 
-  async function runCompression(compress: ReturnType<typeof mysongCompress>) {
+  async function runCompression(compress: ReturnType<typeof gabAstroCompress>) {
     await compress.hooks['astro:config:done']?.({
       config: {
         root: new URL(`file://${tempDir}`),
@@ -128,7 +128,7 @@ describe('Cache System', () => {
     const beforeRunJsStats = await fs.stat(jsPath);
 
     // First compression run
-    const compress1 = mysongCompress();
+    const compress1 = gabAstroCompress();
     await runCompression(compress1);
 
     const firstRunCssStats = await fs.stat(cssPath);
@@ -139,7 +139,7 @@ describe('Cache System', () => {
     expect(firstRunJsStats.mtimeMs).not.toBe(beforeRunJsStats.mtimeMs);
 
     // Second compression run with same files
-    const compress2 = mysongCompress();
+    const compress2 = gabAstroCompress();
     await runCompression(compress2);
 
     const secondRunCssStats = await fs.stat(cssPath);
@@ -154,7 +154,7 @@ describe('Cache System', () => {
     const cssPath = path.join(tempDir, TEST_FILES.css.name);
     
     // First compression run
-    const compress1 = mysongCompress();
+    const compress1 = gabAstroCompress();
     await runCompression(compress1);
     const firstRunStats = await fs.stat(cssPath);
 
@@ -167,7 +167,7 @@ describe('Cache System', () => {
     `);
 
     // Second compression run
-    const compress2 = mysongCompress();
+    const compress2 = gabAstroCompress();
     await runCompression(compress2);
     const secondRunStats = await fs.stat(cssPath);
 
@@ -180,7 +180,7 @@ describe('Cache System', () => {
     
     const originalContent = await fs.readFile(jsPath);
     // First compression run with default settings
-    const compress1 = mysongCompress();
+    const compress1 = gabAstroCompress();
     await runCompression(compress1);
     const firstRunStats = await fs.stat(jsPath);
 
@@ -188,7 +188,7 @@ describe('Cache System', () => {
     await fs.writeFile(jsPath, originalContent);
 
     // Second compression run with different settings
-    const compress2 = mysongCompress({
+    const compress2 = gabAstroCompress({
       js: {
         compress: true,
         mangle: false  // Different from default
@@ -209,7 +209,7 @@ describe('Cache System', () => {
     } catch {}
 
     // Run compression
-    const compress = mysongCompress();
+    const compress = gabAstroCompress();
     await runCompression(compress);
 
     // Cache directory should be created
@@ -231,7 +231,7 @@ describe('Cache System', () => {
     } catch {}
 
     // Run compression with cache disabled
-    const compress = mysongCompress({
+    const compress = gabAstroCompress({
       cache: {
         enabled: false
       }
@@ -253,7 +253,7 @@ describe('Cache System', () => {
     } catch {}
 
     // Run compression with custom cache directory
-    const compress = mysongCompress({
+    const compress = gabAstroCompress({
       cache: {
         enabled: true,
         cacheDir: customCacheDir
