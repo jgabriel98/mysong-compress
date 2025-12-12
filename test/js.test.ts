@@ -4,9 +4,11 @@ import * as path from 'path';
 import { afterEach, beforeAll, describe, expect, test } from 'vitest';
 import gabAstroCompress from '../src/index';
 import { getFileSize, setupTestFile } from './helpers';
+import { b } from 'vitest/dist/suite-dWqIFb_-.js';
 
 describe('JavaScript Compression', () => {
   let tempDir: string;
+  let buildDir: string;
 
   const TEST_JS = {
     basicJs: {
@@ -73,6 +75,7 @@ describe('JavaScript Compression', () => {
 
   beforeAll(async () => {
     tempDir = path.join(__dirname, 'fixtures', 'temp-js-' + Date.now());
+    buildDir = path.join(tempDir, 'dist');
   });
 
   afterEach(async () => {
@@ -84,7 +87,7 @@ describe('JavaScript Compression', () => {
       config: {
         root: new URL(`file://${tempDir}`),
         srcDir: new URL(`file://${tempDir}`),
-        outDir: new URL(`file://${tempDir}/dist`),
+        outDir: new URL(`file://${buildDir}`),
         publicDir: new URL(`file://${tempDir}/public`),
         base: '/',
         integrations: [],
@@ -133,7 +136,7 @@ describe('JavaScript Compression', () => {
     });
 
     await compress.hooks['astro:build:done']?.({
-      dir: new URL(`file://${tempDir}`),
+      dir: new URL(`file://${buildDir}`),
       pages: [{ pathname: '/index.html' }],
       routes: [],
       assets: new Map(),
@@ -142,7 +145,7 @@ describe('JavaScript Compression', () => {
   }
 
   test('should minify basic JavaScript', async () => {
-    const filePath = await setupTestFile(tempDir, TEST_JS.basicJs);
+    const filePath = await setupTestFile(buildDir, TEST_JS.basicJs);
     const originalSize = await getFileSize(filePath);
 
     const compress = gabAstroCompress();
@@ -166,7 +169,7 @@ describe('JavaScript Compression', () => {
   });
 
   test('should handle ES6+ features', async () => {
-    const filePath = await setupTestFile(tempDir, TEST_JS.withES6);
+    const filePath = await setupTestFile(buildDir, TEST_JS.withES6);
     const originalSize = await getFileSize(filePath);
 
     const compress = gabAstroCompress();
@@ -196,7 +199,7 @@ describe('JavaScript Compression', () => {
       `
     };
 
-    const filePath = await setupTestFile(tempDir, malformedJS);
+    const filePath = await setupTestFile(buildDir, malformedJS);
     const originalContent = await fs.readFile(filePath, 'utf-8');
 
     const compress = gabAstroCompress();

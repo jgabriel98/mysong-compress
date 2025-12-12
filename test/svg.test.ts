@@ -7,7 +7,7 @@ import { getFileSize, setupTestFile } from './helpers';
 
 describe('SVG Compression', () => {
   let tempDir: string;
-  const CACHE_DIR = 'compress-svg-test';
+  let buildDir: string;
 
   const TEST_SVGS = {
     basic: {
@@ -57,6 +57,7 @@ describe('SVG Compression', () => {
 
   beforeAll(async () => {
     tempDir = path.join(__dirname, 'fixtures', 'temp-svg-' + Date.now());
+    buildDir = path.join(tempDir, 'dist');
   });
 
   afterAll(async () => {
@@ -69,7 +70,7 @@ describe('SVG Compression', () => {
       config: {
         root: new URL(`file://${tempDir}`),
         srcDir: new URL(`file://${tempDir}`),
-        outDir: new URL(`file://${tempDir}/dist`),
+        outDir: new URL(`file://${buildDir}`),
         publicDir: new URL(`file://${tempDir}/public`),
         base: '/',
         integrations: [],
@@ -119,7 +120,7 @@ describe('SVG Compression', () => {
 
     // Then run build hook
     await compress.hooks['astro:build:done']?.({
-      dir: new URL(`file://${tempDir}`),
+      dir: new URL(`file://${buildDir}`),
       pages: [{ pathname: '/index.html' }],
       routes: [],
       assets: new Map(),
@@ -128,7 +129,7 @@ describe('SVG Compression', () => {
   }
 
   test('should remove comments and format SVG', async () => {
-    const filePath = await setupTestFile(tempDir, TEST_SVGS.basic);
+    const filePath = await setupTestFile(buildDir, TEST_SVGS.basic);
     const originalSize = await getFileSize(filePath);
     
     const compress = gabAstroCompress({
@@ -153,7 +154,7 @@ describe('SVG Compression', () => {
   });
 
   test('should optimize paths', async () => {
-    const filePath = await setupTestFile(tempDir, TEST_SVGS.withPaths);
+    const filePath = await setupTestFile(buildDir, TEST_SVGS.withPaths);
     const originalSize = await getFileSize(filePath);
     
     const compress = gabAstroCompress({
@@ -188,7 +189,7 @@ describe('SVG Compression', () => {
       `
     };
 
-    const filePath = await setupTestFile(tempDir, malformedSVG);
+    const filePath = await setupTestFile(buildDir, malformedSVG);
     const originalContent = await fs.readFile(filePath, 'utf-8');
     
     const compress = gabAstroCompress();

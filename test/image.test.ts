@@ -8,7 +8,7 @@ import { getFileSize, setupTestFile } from './helpers';
 
 describe('Image Compression', async () => {
   let tempDir: string;
-  const CACHE_DIR = 'compress-image-test';
+  let buildDir: string;
 
   // Create test images with more complex data to ensure compression is possible
   const TEST_IMAGES = {
@@ -144,6 +144,7 @@ describe('Image Compression', async () => {
   beforeAll(async () => {
     // Create unique temp directory for this test suite
     tempDir = path.join(__dirname, 'fixtures', 'temp-image-' + Date.now());
+    buildDir = path.join(tempDir, 'dist');
   });
 
   afterEach(async () => {
@@ -163,7 +164,7 @@ describe('Image Compression', async () => {
       config: {
         root: new URL(`file://${tempDir}`),
         srcDir: new URL(`file://${tempDir}`),
-        outDir: new URL(`file://${tempDir}/dist`),
+        outDir: new URL(`file://${buildDir}`),
         publicDir: new URL(`file://${tempDir}/public`),
         base: '/',
         integrations: [],
@@ -208,14 +209,14 @@ describe('Image Compression', async () => {
     // Then run build hook
     await compress.hooks['astro:build:done']?.({
       ...mockBuildData,
-      dir: new URL(`file://${tempDir}`),
+      dir: new URL(`file://${buildDir}`),
       logger: mockLogger,
     });
   }
 
   test('should compress PNG images', async () => {
     // Set up test files
-    const filePath = await setupTestFile(tempDir, TEST_IMAGES.png);
+    const filePath = await setupTestFile(buildDir, TEST_IMAGES.png);
     const originalSize = await getFileSize(filePath);
 
     const compress = gabAstroCompress({
@@ -240,7 +241,7 @@ describe('Image Compression', async () => {
   });
 
   test('should compress JPEG images', async () => {// Set up test files
-    const filePath = await setupTestFile(tempDir, TEST_IMAGES.jpeg);
+    const filePath = await setupTestFile(buildDir, TEST_IMAGES.jpeg);
     const originalSize = await getFileSize(filePath);
 
     const compress = gabAstroCompress({
@@ -268,7 +269,7 @@ describe('Image Compression', async () => {
 
   test('should compress WebP images', async () => {
     // Set up test files
-    const filePath = await setupTestFile(tempDir, TEST_IMAGES.webp);
+    const filePath = await setupTestFile(buildDir, TEST_IMAGES.webp);
     const originalSize = await getFileSize(filePath);
 
     const compress = gabAstroCompress({
@@ -293,7 +294,7 @@ describe('Image Compression', async () => {
 
   test('should compress Avif images', async () => {
     // Set up test files
-    const filePath = await setupTestFile(tempDir, TEST_IMAGES.avif);
+    const filePath = await setupTestFile(buildDir, TEST_IMAGES.avif);
     const originalSize = await getFileSize(filePath);
 
     const compress = gabAstroCompress({
@@ -319,7 +320,7 @@ describe('Image Compression', async () => {
 
   test('should compress Heif images', async () => {
     // Set up test files
-    const filePath = await setupTestFile(tempDir, TEST_IMAGES.heif);
+    const filePath = await setupTestFile(buildDir, TEST_IMAGES.heif);
     const originalSize = await getFileSize(filePath);
 
     const compress = gabAstroCompress({
@@ -345,7 +346,7 @@ describe('Image Compression', async () => {
 
   test('should handle corrupt images gracefully', async () => {
     // Set up test files
-    const filePath = await setupTestFile(tempDir, TEST_IMAGES.corruptImage);
+    const filePath = await setupTestFile(buildDir, TEST_IMAGES.corruptImage);
     const originalContent = await fs.readFile(filePath);
 
     const compress = gabAstroCompress();

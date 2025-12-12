@@ -25,11 +25,9 @@ export const defaultConfig: Required<CompressOptions> = {
     },
     avif: {
         effort: 9.0,
-        lossless: true
     },
     heif: {
         effort: 9.0,
-        lossless: true
     },
     tiff: {},
     gif: {

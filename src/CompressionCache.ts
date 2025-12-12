@@ -4,6 +4,7 @@ import { mkdirSync, readFileSync, unlink, writeFileSync } from 'fs';
 import { stat } from 'fs/promises';
 import path from 'path';
 import { UsedFormatConfig } from './types';
+import chalk from 'chalk';
 
 export interface CacheEntry {
   sourceHash: string;     // Hash of original uncompressed file
@@ -24,8 +25,8 @@ export interface CompressionCache {
 
 export interface CompressionCacheManager {
   initialize(): Promise<void>;
-  getCachedFile(originalPath: string, settings: UsedFormatConfig): Promise<CacheEntry | null>;
-  saveToCache(originalPath: string, compressedContent: Buffer, settings: UsedFormatConfig): Promise<void>;
+  getCachedFile(originalPath: string, originalHash: string, settings: UsedFormatConfig): Promise<CacheEntry | null>;
+  saveToCache(originalPath: string, originalHash: string, originalLength: number, compressedContent: Buffer, settings: UsedFormatConfig): Promise<void>;
   invalidateCache(pattern?: string): Promise<void>;
 }
 
@@ -60,15 +61,13 @@ export class CompressionCacheManagerImpl implements CompressionCacheManager {
     }
   }
 
-  private saveManifest() {
+  public saveManifest() {
     const manifestPath = path.join(this.cacheDir, 'manifest.json');
     writeFileSync(manifestPath, JSON.stringify(this.manifest, null, 2));
     this.logger?.debug('Manifest saved.');
   }
 
-  async getCachedFile(originalPath: string, settings: UsedFormatConfig): Promise<CacheEntry | null> {
-    const originalContent = readFileSync(originalPath);
-    const sourceOriginalHash = createHash('sha256').update(originalContent).digest('hex');
+  async getCachedFile(originalPath: string, originalHash: string, settings: UsedFormatConfig): Promise<CacheEntry | null> {
 
     this.logger?.debug(`Retrieving cached file for: ${originalPath}`);
     const entry = this.manifest.entries[originalPath];
@@ -77,13 +76,13 @@ export class CompressionCacheManagerImpl implements CompressionCacheManager {
       return null;
     }
 
-    if (entry.sourceHash !== sourceOriginalHash) {
-      this.logger?.debug('Source hash mismatch.');
+    if (entry.sourceHash !== originalHash) {
+      this.logger?.warn('Source hash mismatch.');
       this.invalidateCache(originalPath);
       return null;
     }
     if (JSON.stringify(entry.settings) !== JSON.stringify(settings)) {
-      this.logger?.debug('Settings mismatch.');
+      this.logger?.warn('Settings mismatch.');
       this.invalidateCache(originalPath);
       return null;
     }
@@ -95,18 +94,14 @@ export class CompressionCacheManagerImpl implements CompressionCacheManager {
     } catch {
       this.logger?.debug('Cached file does not exist, removing entry.');
       delete this.manifest.entries[originalPath];
-      await this.saveManifest();
       return null;
     }
   }
 
-  async saveToCache(originalPath: string, compressedContent: Buffer, settings: UsedFormatConfig): Promise<void> {
-    const originalContent = readFileSync(originalPath);
-    const sourceOriginalHash = createHash('sha256').update(originalContent).digest('hex');
-
+  async saveToCache(originalPath: string, originalHash: string, originalLength: number, compressedContent: Buffer, settings: UsedFormatConfig): Promise<void> {
     this.logger?.debug(`Saving to cache: ${originalPath}`);
     const ext = originalPath.split('.').pop() || '';
-    const cachedFileName = `${sourceOriginalHash}.${ext}`;
+    const cachedFileName = `${originalHash}.${ext}`;
     const cachedFilePath = path.join(this.cacheDir, cachedFileName);
 
     // Save compressed content
@@ -115,28 +110,26 @@ export class CompressionCacheManagerImpl implements CompressionCacheManager {
 
     // Update manifest
     const entry: CacheEntry = {
-      sourceHash: sourceOriginalHash,
+      sourceHash: originalHash,
       compressedPath: cachedFilePath,
       timestamp: Date.now(),
       settings,
       size: {
-        original: originalContent.length,
+        original: originalLength,
         compressed: compressedContent.length
       }
     };
 
     this.manifest.entries[originalPath] = entry;
-    await this.saveManifest();
     this.logger?.debug('Cache entry updated.');
   }
 
   async invalidateCache(originalPath: string): Promise<void> {
-    this.logger?.debug(`Invalidating cache for: ${originalPath}`);
+    this.logger?.warn(`Invalidating cache for: ${originalPath}`);
     unlink(this.manifest.entries[originalPath].compressedPath, (err) => {
       if (err) this.logger?.error(`Failed to remove invalid cached file: ${err}`);
     })
     delete this.manifest.entries[originalPath];
-    this.saveManifest();
     this.logger?.debug('Cache invalidation complete.');
   }
 } 

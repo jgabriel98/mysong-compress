@@ -7,6 +7,7 @@ import type { AstroIntegrationLogger } from 'astro';
 
 describe('CSS Compression', () => {
   let tempDir: string;
+  let buildDir: string;
 
   const TEST_CSS = {
     basic: {
@@ -63,8 +64,9 @@ describe('CSS Compression', () => {
 
   beforeEach(async () => {
     tempDir = path.join(__dirname, 'fixtures', 'temp-css-' + Date.now());
+    buildDir = path.join(tempDir, 'dist');
     await fs.mkdir(tempDir, { recursive: true });
-    await setupTestFiles(tempDir, TEST_CSS);
+    await setupTestFiles(buildDir, TEST_CSS);
   });
 
   afterEach(async () => {
@@ -76,7 +78,7 @@ describe('CSS Compression', () => {
       config: {
         root: new URL(`file://${tempDir}`),
         srcDir: new URL(`file://${tempDir}`),
-        outDir: new URL(`file://${tempDir}/dist`),
+        outDir: new URL(`file://${buildDir}`),
         publicDir: new URL(`file://${tempDir}/public`),
         base: '/',
         integrations: [],
@@ -125,7 +127,7 @@ describe('CSS Compression', () => {
     });
 
     await compress.hooks['astro:build:done']?.({
-      dir: new URL(`file://${tempDir}`),
+      dir: new URL(`file://${buildDir}`),
       pages: [{ pathname: '/index.html' }],
       routes: [],
       assets: new Map(),
@@ -134,7 +136,7 @@ describe('CSS Compression', () => {
   }
 
   test('should minify basic CSS', async () => {
-    const filePath = path.join(tempDir, TEST_CSS.basic.name);
+    const filePath = path.join(buildDir, TEST_CSS.basic.name);
     const originalSize = await getFileSize(filePath);
     
     const compress = gabAstroCompress();
@@ -157,7 +159,7 @@ describe('CSS Compression', () => {
   });
 
   test('should handle vendor prefixes', async () => {
-    const filePath = path.join(tempDir, TEST_CSS.withVendorPrefixes.name);
+    const filePath = path.join(buildDir, TEST_CSS.withVendorPrefixes.name);
     const originalSize = await getFileSize(filePath);
     
     const compress = gabAstroCompress();

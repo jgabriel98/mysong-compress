@@ -7,7 +7,9 @@ export async function traverseDirectory(directory: URL) {
   const files = fs.readdirSync(directory.pathname, { withFileTypes: true });
   for (const file of files) {
     if (file.isDirectory()) {
-      await traverseDirectory(new URL(path.join(directory.href, file.name)));
+      subTree.push(
+        ...await traverseDirectory(new URL(path.join(directory.href, file.name)))
+      );
     }
     else {
       const filePath = path.join(directory.pathname, file.name);

@@ -7,7 +7,7 @@ import { getFileSize, setupTestFile } from './helpers';
 
 describe('HTML Minification', () => {
   let tempDir: string;
-  const CACHE_DIR = 'compress-html-test';
+  let buildDir: string;
   
   const TEST_HTML = {
     basic: {
@@ -71,6 +71,7 @@ describe('HTML Minification', () => {
   beforeAll(async () => {
     // Create unique temp directory for this test suite
     tempDir = path.join(__dirname, 'fixtures', 'temp-html-' + Date.now());
+    buildDir = path.join(tempDir, 'dist');
   });
 
   afterEach(async () => {
@@ -90,7 +91,7 @@ describe('HTML Minification', () => {
       config: {
         root: new URL(`file://${tempDir}`),
         srcDir: new URL(`file://${tempDir}`),
-        outDir: new URL(`file://${tempDir}/dist`),
+        outDir: new URL(`file://${buildDir}`),
         publicDir: new URL(`file://${tempDir}/public`),
         base: '/',
         integrations: [],
@@ -143,13 +144,13 @@ describe('HTML Minification', () => {
     // Then run build hook
     await compress.hooks['astro:build:done']?.({
       ...mockBuildData,
-      dir: new URL(`file://${tempDir}`),
+      dir: new URL(`file://${buildDir}`),
       logger: mockLogger,
     });
   }
 
   test('should remove HTML comments', async () => {
-    const filePath = await setupTestFile(tempDir, TEST_HTML.basic);
+    const filePath = await setupTestFile(buildDir, TEST_HTML.basic);
     const originalContent = await fs.readFile(filePath, 'utf-8');
     
     // Initialize compression with default settings
@@ -165,7 +166,7 @@ describe('HTML Minification', () => {
   });
 
   test('should collapse whitespace while preserving content', async () => {
-    const filePath = await setupTestFile(tempDir, TEST_HTML.basic);
+    const filePath = await setupTestFile(buildDir, TEST_HTML.basic);
     const originalContent = await fs.readFile(filePath, 'utf-8');
     
     const compress = gabAstroCompress();
@@ -180,7 +181,7 @@ describe('HTML Minification', () => {
   });
 
   test('should minify inline CSS and JavaScript', async () => {
-    const filePath = await setupTestFile(tempDir, TEST_HTML.withInlineAssets);
+    const filePath = await setupTestFile(buildDir, TEST_HTML.withInlineAssets);
     const originalSize = await getFileSize(filePath);
     
     const compress = gabAstroCompress({
@@ -220,7 +221,7 @@ describe('HTML Minification', () => {
       `
     };
 
-    const filePath = await setupTestFile(tempDir, malformedHTML);
+    const filePath = await setupTestFile(buildDir, malformedHTML);
     
     const compress = gabAstroCompress();
     
