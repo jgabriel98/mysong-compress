@@ -9,7 +9,7 @@ describe('JavaScript Compression', () => {
   let tempDir: string;
 
   const TEST_JS = {
-    basic: {
+    basicJs: {
       name: 'basic.js',
       content: `
         // This comment should be removed
@@ -33,7 +33,7 @@ describe('JavaScript Compression', () => {
       `
     },
     withES6: {
-      name: 'modern.js',
+      name: 'modern.mjs',
       content: `
         const arrowFunction = (x) => {
             return x.map(item => item * 2);
@@ -142,23 +142,23 @@ describe('JavaScript Compression', () => {
   }
 
   test('should minify basic JavaScript', async () => {
-    const filePath = await setupTestFile(tempDir, TEST_JS.basic);
+    const filePath = await setupTestFile(tempDir, TEST_JS.basicJs);
     const originalSize = await getFileSize(filePath);
-    
+
     const compress = gabAstroCompress();
     await runCompression(compress);
 
     const compressedContent = await fs.readFile(filePath, 'utf-8');
     const compressedSize = await getFileSize(filePath);
-    
+
     // Verify size reduction
     expect(compressedSize).toBeLessThan(originalSize);
-    
+
     // Verify comment removal
     expect(compressedContent).not.toContain('// This comment should be removed');
     expect(compressedContent).not.toContain('// Inline comment');
     expect(compressedContent).not.toContain('/* Multi-line comment');
-    
+
     // Verify code functionality is preserved
     expect(compressedContent).toContain('function calculateSum');
     expect(compressedContent).toContain('export function main');
@@ -168,16 +168,16 @@ describe('JavaScript Compression', () => {
   test('should handle ES6+ features', async () => {
     const filePath = await setupTestFile(tempDir, TEST_JS.withES6);
     const originalSize = await getFileSize(filePath);
-    
+
     const compress = gabAstroCompress();
     await runCompression(compress);
 
     const compressedContent = await fs.readFile(filePath, 'utf-8');
     const compressedSize = await getFileSize(filePath);
-    
+
     // Verify size reduction
     expect(compressedSize).toBeLessThan(originalSize);
-    
+
     // Verify ES6+ features are preserved
     expect(compressedContent).toContain('=>');  // Arrow functions
     expect(compressedContent).toContain('class');  // Class syntax
@@ -198,16 +198,16 @@ describe('JavaScript Compression', () => {
 
     const filePath = await setupTestFile(tempDir, malformedJS);
     const originalContent = await fs.readFile(filePath, 'utf-8');
-    
+
     const compress = gabAstroCompress();
-    
+
     // Should not throw error
     await runCompression(compress);
 
     // Original file should still exist and be unchanged
     const exists = await fs.access(filePath).then(() => true).catch(() => false);
     expect(exists).toBe(true);
-    
+
     const finalContent = await fs.readFile(filePath, 'utf-8');
     expect(finalContent).toBe(originalContent);
   });

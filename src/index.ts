@@ -1,5 +1,4 @@
-import type { AstroIntegration, AstroConfig, AstroIntegrationLogger } from 'astro';
-import { createHash } from 'crypto';
+import type { AstroConfig, AstroIntegration, AstroIntegrationLogger } from 'astro';
 import * as csso from 'csso';
 import * as fs from 'fs';
 import { minify } from 'html-minifier-terser';
@@ -9,8 +8,34 @@ import { optimize } from 'svgo';
 import { minify as terserMinify } from 'terser';
 import { CompressionCacheManagerImpl } from './CompressionCache.js';
 import { defaultCacheDir, defaultConfig } from './defaultConfig.js';
+import { traverseDirectory } from './helpers.js';
 import type { CompressOptions, FormatCompressionOptions, UsedFormatConfig } from './types.js';
 
+const enum KnowFailReason {
+    BiggerSize = "compressed size is greater than original size",
+    UnknowMediaFormat = "unknown media format",
+    NoOutput = "compression produced no output",
+    Skipped = "Skipped"
+}
+
+type Result = { processed: true } | { processed: false; reason: KnowFailReason | string };
+
+
+// type ConfigAliasMap<T extends string[]> = { [key in keyof FormatCompressionOptions]: T};
+const configAliases = {
+    js: new Set(['mjs', 'cjs'] as const),
+    jpeg: new Set(['jpg'] as const),
+    tiff: new Set(['tif'] as const),
+} as const;
+
+function getAliasForExtension(extension: string) {
+    for (const key in configAliases) {
+        const aliases = configAliases[key as keyof typeof configAliases] as Set<string>;
+        if (aliases.has(extension)) {
+            return key as keyof typeof configAliases;
+        }
+    }
+}
 
 export default function GabAstroCompress(options: CompressOptions = {}): AstroIntegration {
     // Merge compression options with defaults
@@ -25,10 +50,9 @@ export default function GabAstroCompress(options: CompressOptions = {}): AstroIn
         html: { ...defaultConfig.html, ...options.html },
         js: { ...defaultConfig.js, ...options.js },
         svg: { ...defaultConfig.svg, ...options.svg }
-    };
+    } as const;
 
     let astroConfig: AstroConfig;
-    let candidates: string[] = [];
     let originalSizeTotal = 0;
     let newSizeTotal = 0;
     let processedFiles = 0;
@@ -36,56 +60,46 @@ export default function GabAstroCompress(options: CompressOptions = {}): AstroIn
     let cacheHits = 0;
     let cacheManager: CompressionCacheManagerImpl;
 
-    async function traverseDirectory(directory: URL, logger: AstroIntegrationLogger) {
-        const files = fs.readdirSync(directory.pathname, { withFileTypes: true });
-        for (const file of files) {
-            if (file.isDirectory()) {
-                await traverseDirectory(new URL(path.join(directory.href, file.name)), logger);
-            }
-            else {
-                const filePath = path.join(directory.pathname, file.name);
-                logger.debug(filePath);
-                candidates.push(filePath);
-            }
-        }
-    }
-
     function getUsedConfig(filePath: string) {
-        const format = filePath.toLowerCase().split('.').pop() as keyof FormatCompressionOptions;
-        const config = compressionConfig[format] ?? null;
-        return { config, format };
+        const fileExtension = filePath.toLowerCase().split('.').pop() ?? '';
+        const configKey = fileExtension in compressionConfig
+            ? fileExtension as keyof FormatCompressionOptions
+            : getAliasForExtension(fileExtension)
+
+        if (!configKey) return null;
+
+        const config = compressionConfig[configKey as keyof FormatCompressionOptions];
+        console.log('Config key for', filePath, 'is', configKey, config);
+        return { config, format: configKey };
     }
 
     async function processFile(filePath: string, logger: AstroIntegrationLogger)
         : Promise<
-            { processed: true, originalSize: number, newSize: number, reason: string, usedConfig: UsedFormatConfig }
-            | { processed: false, originalSize: number, newSize: number, reason: string, usedConfig: UsedFormatConfig | null }
+            { processed: true, originalSize: number, newSize: number, usedConfig: UsedFormatConfig }
+            | { processed: false, originalSize: number, newSize: number, reason: string, usedConfig: UsedFormatConfig }
         > {
         logger.debug("Processing " + filePath);
 
         const originalSize = fs.statSync(filePath).size;
         let newSize = 0;
-        let processed = false;
-        let reason = '';
+        let processingResult: Result;
         let usedConfig = getUsedConfig(filePath);
 
-        const handleCompressedResult = (compressedContent: string | Buffer) => {
+        const handleCompressedResult = (compressedContent: string | Buffer): Result => {
             const contentLength = Buffer.isBuffer(compressedContent) ? compressedContent.length : compressedContent.length;
             if (contentLength < originalSize) {
                 fs.writeFileSync(filePath, compressedContent);
                 newSize = fs.statSync(filePath).size;
                 originalSizeTotal += originalSize;
                 newSizeTotal += newSize;
-                processed = true;
-                return true;
+                return { processed: true };
             }
-            reason = "compressed size is greater than original size";
-            return false;
+            return { processed: false, reason: KnowFailReason.BiggerSize };
         };
 
         const handleError = (error: any, processType: string) => {
             logger.debug(`${processType} error for ${filePath}: ${error}`);
-            reason = `${processType.toLowerCase()} failed`;
+            const reason = `${processType.toLowerCase()} failed`;
             return { processed: false, originalSize, newSize: originalSize, reason, usedConfig } as const;
         };
 
@@ -101,30 +115,30 @@ export default function GabAstroCompress(options: CompressOptions = {}): AstroIn
                     jpeg: () => pipeline.jpeg(compressionConfig.jpeg),
                     webp: () => pipeline.webp(compressionConfig.webp),
                     avif: () => pipeline.avif(compressionConfig.avif),
-                    heif: () => pipeline.heif({...compressionConfig.heif, compression})
-                };
+                    heif: () => pipeline.heif({ ...compressionConfig.heif, compression })
+                } as const;
 
                 if (format && format in formatConfig) {
                     pipeline = formatConfig[format as keyof typeof formatConfig]();
                     const compressedFile = await pipeline.toBuffer();
-                    handleCompressedResult(compressedFile);
+                    processingResult = handleCompressedResult(compressedFile);
                 } else {
-                    reason = "unknown format";
+                    processingResult = { processed: false, reason: KnowFailReason.UnknowMediaFormat };
                 }
 
             } else if (/\.(html|htm)$/i.test(filePath)) {
                 const htmlContent = fs.readFileSync(filePath, 'utf-8');
                 const minifiedHtml = await minify(htmlContent, compressionConfig.html);
-                handleCompressedResult(minifiedHtml);
+                processingResult = handleCompressedResult(minifiedHtml);
 
-            } else if (/\.(js|ts)$/i.test(filePath)) {
+            } else if (/\.(js|mjs)$/i.test(filePath)) {
                 const jsContent = fs.readFileSync(filePath, 'utf-8');
                 try {
                     const minifiedJs = await terserMinify(jsContent, compressionConfig.js);
                     if (minifiedJs.code) {
-                        handleCompressedResult(minifiedJs.code);
+                        processingResult = handleCompressedResult(minifiedJs.code);
                     } else {
-                        reason = "minification produced no output";
+                        processingResult = { processed: false, reason: KnowFailReason.NoOutput };
                     }
                 } catch (terserError) {
                     return handleError(terserError, "JavaScript minification");
@@ -140,7 +154,10 @@ export default function GabAstroCompress(options: CompressOptions = {}): AstroIn
                     });
 
                     if (optimizedSvg.data) {
-                        handleCompressedResult(optimizedSvg.data);
+                        processingResult = handleCompressedResult(optimizedSvg.data);
+                    } else {
+                        logger.error(`Failed to optimize ${filePath}`);
+                        processingResult = { processed: false, reason: KnowFailReason.NoOutput };
                     }
                 } catch (svgoError) {
                     return handleError(svgoError, "SVG optimization");
@@ -148,30 +165,24 @@ export default function GabAstroCompress(options: CompressOptions = {}): AstroIn
 
             } else if (/\.(css|scss|sass|less)$/i.test(filePath)) {
                 const cssContent = fs.readFileSync(filePath, 'utf-8');
-                const result = csso.minify(cssContent, compressionConfig.css);
+                const minifyed = csso.minify(cssContent, compressionConfig.css);
 
-                if (result.css) {
-                    handleCompressedResult(result.css);
+                if (minifyed.css) {
+                    processingResult = handleCompressedResult(minifyed.css);
                 } else {
                     logger.error(`Failed to minify ${filePath}`);
+                    processingResult = { processed: false, reason: KnowFailReason.NoOutput };
                 }
             } else {
-                logger.info("skipping " + filePath);
+                processingResult = { processed: false, reason: KnowFailReason.Skipped };
             }
 
         } catch (error) {
             logger.error(`Failed to process file ${filePath}: ${error}`);
-            reason = "file read/write error";
-            return { processed: false, originalSize, newSize: originalSize, reason, usedConfig };
+            processingResult = { processed: false, reason: String(error) };
         }
 
-        if (processed) {
-            logger.info(`Processed ${filePath} - Original size: ${originalSize} bytes, New size: ${newSize} bytes`);
-        } else {
-            logger.info(`Skipping ${filePath} - ${reason}`);
-        }
-
-        return { processed, originalSize, newSize, reason, usedConfig };
+        return { ...processingResult, originalSize, newSize, usedConfig };
     }
 
 
@@ -198,17 +209,15 @@ export default function GabAstroCompress(options: CompressOptions = {}): AstroIn
                 logger.info(JSON.stringify(assets));
                 logger.info(JSON.stringify(dir));
 
-                await traverseDirectory(dir, logger);
+                const candidates = await traverseDirectory(dir);
 
 
                 let promises: Promise<any>[] = [];
 
                 for (const candidate of candidates) {
                     if (compressionConfig.cache?.enabled) {
-                        const originalContent = fs.readFileSync(candidate);
-                        const sourceHash = createHash('sha256').update(originalContent).digest('hex');
                         const usedConfig = getUsedConfig(candidate);
-                        const cachedFile = await cacheManager.getCachedFile(candidate, sourceHash, usedConfig);
+                        const cachedFile = await cacheManager.getCachedFile(candidate, usedConfig);
 
                         if (cachedFile) {
                             logger.info(`Using cached version for ${candidate}`);
@@ -224,16 +233,25 @@ export default function GabAstroCompress(options: CompressOptions = {}): AstroIn
 
                         promises.push(processFile(candidate, logger).then(result => {
                             if (result.processed) {
+                                logger.info(`Processed ${candidate} - Original size: ${result.originalSize} bytes, New size: ${result.newSize} bytes`)
                                 const compressedContent = fs.readFileSync(candidate);
-                                promises.push(cacheManager.saveToCache(candidate, sourceHash, originalContent.length, compressedContent, result.usedConfig));
+                                promises.push(cacheManager.saveToCache(candidate, compressedContent, result.usedConfig));
                                 processedFiles++;
-                            } else {
+                            } else if (result.reason === KnowFailReason.BiggerSize) {
+                                logger.warn(`${candidate} did not reduce in size. Saving original file to cache.`);
+                                const compressedContent = fs.readFileSync(candidate);
+                                promises.push(cacheManager.saveToCache(candidate, compressedContent, result.usedConfig));
+                                processedFiles++;
+                            }
+                            else {
                                 skippedFiles++;
                             }
+
                         }));
                     } else {
                         promises.push(processFile(candidate, logger).then(result => {
                             if (result.processed) {
+                                logger.info(`Processed ${candidate} - Original size: ${result.originalSize} bytes, New size: ${result.newSize} bytes`)
                                 processedFiles++;
                             } else {
                                 skippedFiles++;

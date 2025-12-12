@@ -2,7 +2,7 @@ import type { CompressOptions } from "./types";
 
 export const defaultCacheDir = 'node_modules/.astro/.gab-astro-compress';
 
-export const defaultConfig: NonNullable<CompressOptions> = {
+export const defaultConfig: Required<CompressOptions> = {
     cache: {
         enabled: true,
         cacheDir: defaultCacheDir
@@ -15,10 +15,13 @@ export const defaultConfig: NonNullable<CompressOptions> = {
         mozjpeg: true,
         trellisQuantisation: true,
         overshootDeringing: true,
-        optimizeScans: true
+        optimizeScans: true,
+    },
+    jxl : {
+        effort: 9.0,
     },
     webp: {
-        effort: 6.0
+        effort: 6.0,
     },
     avif: {
         effort: 9.0,
@@ -27,6 +30,10 @@ export const defaultConfig: NonNullable<CompressOptions> = {
     heif: {
         effort: 9.0,
         lossless: true
+    },
+    tiff: {},
+    gif: {
+        effort: 6.0,
     },
     html: {
         collapseWhitespace: true,
@@ -37,7 +44,7 @@ export const defaultConfig: NonNullable<CompressOptions> = {
     },
     js: {
         compress: true,
-        mangle: true
+        mangle: true,
     },
     svg: {
         multipass: true,
